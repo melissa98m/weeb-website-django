@@ -58,7 +58,7 @@ users/
 
 1) **Clone**
 ```bash
-git clone <ton-repo> weeb-backend
+git clone https://github.com/melissa98m/weeb-website-django weeb-backend
 cd weeb-backend
 ```
 
