@@ -1,0 +1,83 @@
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+pip-wheel-*
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.hypothesis/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage_html/
+coverage.xml
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-*
+media/
+
+# Static collectés (not source code static/)
+staticfiles/
+staticfiles/*
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.sublime-*
+*.code-workspace
+
+# Node 
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build artifacts
+dist/
+build/
+.eggs/
+*.egg-info/
+*.egg
+
+# Misc
+*.swp
+*.swo
+__pypackages__/
+site/
