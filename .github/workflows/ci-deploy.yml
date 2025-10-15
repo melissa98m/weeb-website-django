@@ -51,9 +51,17 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Add host to known_hosts
+        shell: bash
         run: |
+          set -euo pipefail
+          if [[ -z "${{ secrets.SSH_HOST }}" || -z "${{ secrets.SSH_PORT }}" ]]; then
+          echo "SSH_HOST or SSH_PORT is empty. Check your repository secrets." >&2
+          exit 1
+          fi
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -T 10 -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || {
+          echo "ssh-keyscan failed (host unreachable?). Continuing anyway…" >&2
+          }
 
       - name: Remote deploy
         uses: appleboy/ssh-action@v1.2.0
