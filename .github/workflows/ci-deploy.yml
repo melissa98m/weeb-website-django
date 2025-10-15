@@ -45,30 +45,16 @@ jobs:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && success() }}
 
     steps:
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add host to known_hosts
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -z "${{ secrets.SSH_HOST }}" || -z "${{ secrets.SSH_PORT }}" ]]; then
-          echo "SSH_HOST or SSH_PORT is empty. Check your repository secrets." >&2
-          exit 1
-          fi
-          mkdir -p ~/.ssh
-          ssh-keyscan -T 10 -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || {
-          echo "ssh-keyscan failed (host unreachable?). Continuing anyway…" >&2
-          }
-
       - name: Remote deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}   # <-- indispensable
           script_stop: true
+          ssh_config: |
+            Host *
+              StrictHostKeyChecking no
           script: |
             bash /home/rpiserver/weeb-website-django/deploy.sh
