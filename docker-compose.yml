@@ -3,9 +3,12 @@ services:
     build: .
     env_file: .env
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "8000:8000"         # host:container (le container écoute 8000 via gunicorn)
     volumes:
-      - .:/app
+      - .:/app              # pratique pour debug; tu peux l’enlever en prod stricte
+      - ./staticfiles:/app/staticfiles
+      - ./db.sqlite3:/app/db.sqlite3   # si tu restes sur SQLite
+    restart: unless-stopped
     depends_on: []
     # Uncomment if you enable Postgres
     # depends_on:

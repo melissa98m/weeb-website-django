@@ -1,18 +1,16 @@
-# Python slim image
 FROM python:3.14-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     PIP_NO_CACHE_DIR=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# System deps (psycopg2 build not needed when using -binary)
-RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     curl     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt && pip install gunicorn
 
 COPY . .
-
-# Collect static later if needed
 EXPOSE 8000
-CMD ["/bin/sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${BACKEND_PORT:-8000}"]
+CMD ["gunicorn", "config.wsgi:application", "-b", "0.0.0.0:8000", "-w", "2"]
