@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from corsheaders.defaults import default_headers, default_methods
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,7 +11,10 @@ def env_list(key, default=""):
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-dev-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = env_list(
+    "DJANGO_ALLOWED_HOSTS",
+    default="127.0.0.1,localhost"
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -25,9 +29,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -66,16 +70,30 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # CORS / CSRF
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://localhost:3000")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:5173"
+)
+CORS_ALLOWED_ORIGINS = env_list(
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    default="http://localhost:5173"
+)
 CORS_ALLOW_CREDENTIALS = True
+
+
+CORS_ALLOW_METHODS = list(default_methods) + ["OPTIONS"]
+CORS_ALLOW_HEADERS = list(default_headers) + ["x-csrftoken", "authorization"]
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24h
 
 CSRF_COOKIE_HTTPONLY = False # must be readable by frontend JS for header, but you may keep httponly False
 CSRF_COOKIE_SECURE = True # set True in HTTPS prod
-CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "None"
 
 SESSION_COOKIE_SECURE = True # prod: True
-SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "None"
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 # DRF
 REST_FRAMEWORK = {
@@ -99,7 +117,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
     "AUTH_COOKIE_SECURE": True, # prod True
     "AUTH_COOKIE_HTTP_ONLY": True,
-    "AUTH_COOKIE_SAMESITE": "Lax",
+    "AUTH_COOKIE_SAMESITE": "None",
 }
 
 # internationalization

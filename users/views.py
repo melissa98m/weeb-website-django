@@ -17,8 +17,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from .serializers import MeSerializer
+from .serializers import MeSerializer, EmailOrUsernameTokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -46,41 +45,38 @@ def _cookie_settings():
 
 class CookieTokenObtainPairView(TokenObtainPairView):
     """
-    Issue JWT access and refresh tokens and set them as cookies.
+    POST body:
+      { "username": "...", "password": "..." }
+      ou { "email": "...", "password": "..." }
 
-    Request body:
-      {
-        "username": "<username>",
-        "password": "<password>"
-      }
-
-    Response:
-      200 OK { "detail": "logged_in" }
-      (Tokens are *not* returned in the body; they are written to cookies.)
-
-    Security notes:
-    - Cookies are HttpOnly and (in prod) Secure to reduce XSS/mitm risk.
-    - Do not include the tokens in the JSON payload.
+    Réponse:
+      200 { "detail": "logged_in" } + cookies HttpOnly 'access' et 'refresh'
+      401 si identifiants invalides
     """
     permission_classes = [AllowAny]
+    serializer_class = EmailOrUsernameTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        # Laisse SimpleJWT valider les identifiants et générer les tokens
         response = super().post(request, *args, **kwargs)
-        data = response.data
+
+        data = getattr(response, "data", {}) or {}
         access = data.get("access")
         refresh = data.get("refresh")
-        # On error (e.g., wrong credentials), DRF returns 401 and no tokens.
+
+        # En cas d'erreur (pas de tokens), on renvoie la réponse telle quelle (401, 400, etc.)
         if not access or not refresh:
             return response
 
+        # Écrit les tokens en cookies HttpOnly et ne les renvoie pas dans le corps
         opts = _cookie_settings()
-        # Write tokens to cookies; do not return them in the response body.
         response.set_cookie(
             key=opts["access_name"],
             value=access,
             secure=opts["secure"],
             httponly=opts["httponly"],
             samesite=opts["samesite"],
+            path="/",
         )
         response.set_cookie(
             key=opts["refresh_name"],
@@ -88,10 +84,10 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             secure=opts["secure"],
             httponly=opts["httponly"],
             samesite=opts["samesite"],
+            path="/",
         )
         response.data = {"detail": "logged_in"}
         return response
-
 
 class CookieTokenRefreshView(TokenRefreshView):
     """
@@ -110,6 +106,7 @@ class CookieTokenRefreshView(TokenRefreshView):
     - Keep short access lifetime; refresh lifetime can be longer.
     - If you enable rotation and blacklisting, ensure the blacklist app is installed.
     """
+
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
@@ -250,7 +247,9 @@ def register_view(request):
 
     # Password confirmation
     if password and password_confirm and password != password_confirm:
-        errors.setdefault("password_confirm", []).append("Ne correspond pas au mot de passe.")
+        errors.setdefault("password_confirm", []).append(
+            "Ne correspond pas au mot de passe."
+        )
 
     # Username uniqueness (case-insensitive)
     if username and User.objects.filter(username__iexact=username).exists():
@@ -274,7 +273,9 @@ def register_view(request):
     try:
         validate_password(password)
     except DjangoValidationError as e:
-        return Response({"password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     # Create the user record
     user = User.objects.create_user(
